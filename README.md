@@ -2,6 +2,10 @@
 
 Google 2-gram
 
+<p align="center">
+  <a href="#dsps-task-2---map-reduce"><img src="https://miro.medium.com/max/4000/1*b_al7C5p26tbZG4sy-CWqw.png" width="350" title="AWS" target="_blank"/></a>
+</p>
+
 ## Round 1
 
 Divide the dataset per decades
