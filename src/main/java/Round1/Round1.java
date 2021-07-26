@@ -36,8 +36,8 @@ public class Round1 {
             IntWritable dec = new IntWritable(Integer.parseInt(data[1]));
             IntWritable occ = new IntWritable(Integer.parseInt(data[2]));
 
-            if (gram.length != 2 || CommonConstants.stopWords.contains(gram[0]) || CommonConstants.stopWords.contains(gram[1]))
-                context.getCounter(CommonConstants.COUNTERS.NOT_COUNTED).increment(1L);
+            if (gram.length != 2 || Constants.stopWords.contains(gram[0]) || Constants.stopWords.contains(gram[1]))
+                context.getCounter(Constants.COUNTERS.NOT_COUNTED).increment(1L);
             else {
                 N += occ.get();
 
@@ -51,9 +51,9 @@ public class Round1 {
 
         @Override
         public void cleanup(Context context) throws IOException, InterruptedException {
-            int curr_dec = CommonConstants.smallest_year;
+            int curr_dec = Constants.smallest_year;
 
-            while (curr_dec <= CommonConstants.largest_year) {
+            while (curr_dec <= Constants.largest_year) {
                 context.write(new Gram2(curr_dec), new IntWritable(N));
                 curr_dec += 10;
             }
@@ -61,9 +61,9 @@ public class Round1 {
 
         private void broadcast(Gram2 key, IntWritable val, Context context) throws IOException, InterruptedException {
             key.setW2(new Text("*"));
-            int curr_dec = CommonConstants.smallest_year;
+            int curr_dec = Constants.smallest_year;
 
-            while (curr_dec <= CommonConstants.largest_year) {
+            while (curr_dec <= Constants.largest_year) {
                 context.write(key.setDecade(curr_dec), val);
                 curr_dec += 10;
             }

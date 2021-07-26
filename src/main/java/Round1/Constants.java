@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import java.util.Arrays;
 import java.util.HashSet;
 
-public class CommonConstants {
+public class Constants {
 
     public enum COUNTERS {
         NOT_COUNTED,
