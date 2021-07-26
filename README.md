@@ -33,15 +33,18 @@ __input:__ K = Gram2 Object,  V = [occ1, occ2, ...]
 __output:__ `decade w1 w2 TAB c(w1, w2) c(w1)`
 
 > At the end of this Round we have 51 files (one per decade) with the value of N in each file.  
-> Each 2-gram is followed by its c(w1,w2)
+> Each 2-gram is followed by its c(w1,w2) and c(w1)
 
 ```text
-1800-1809 * N	695245
-1800-1809 OS 160	1
-1800-1809 Os_NOUN homini	21
-1800-1809 Osar _ADP_	2
-1800-1809 Osbaston _._	10
-1800-1809 Osbern _CONJ_	3
+2000-2009 * *	699925
+2000-2009 O'Scannlain_NOUN _CONJ_	43 77
+2000-2009 O'Shannassy_NOUN ,_.	49 134
+2000-2009 O'Shea_NOUN a_DET	54 316
+2000-2009 O'Shea_NOUN describes	13 316
+2000-2009 O'Sullivan refers_VERB	37 68
+2000-2009 O.S B._NOUN	2 104
+2000-2009 O.S.E. _NOUN_	51 287
+2000-2009 O.S.R._NOUN _NOUN_	16 132
 ```
 
 ## Round 2
