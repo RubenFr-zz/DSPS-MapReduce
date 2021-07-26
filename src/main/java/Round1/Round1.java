@@ -12,7 +12,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -21,8 +20,6 @@ import org.slf4j.LoggerFactory;
 
 public class Round1 {
 
-    private static Logger logger;
-
     public static class MapperClass extends Mapper<LongWritable, Text, Gram2, IntWritable> {
 
         private int N;
@@ -30,7 +27,6 @@ public class Round1 {
         @Override
         public void setup(Context context) {
             N = 0;
-            logger.warn("\nStarting Mapping for Round 1...\n");
         }
 
         @Override
@@ -44,6 +40,11 @@ public class Round1 {
                 context.getCounter(CommonConstants.COUNTERS.NOT_COUNTED).increment(1L);
             else {
                 N += occ.get();
+
+                // Broadcast to every reducer K = dec w1 *, V = occ (to count the 2grams starting with w2 in the entire corpus)
+                broadcast(new Gram2(new Text(gram[0]), new Text(gram[1])), occ, context);
+
+                // Submit K = dec w1 w2, V = occ (to count the recurrence of this 2gram in the decade)
                 context.write(new Gram2(new Text(gram[0]), new Text(gram[1]), dec), occ);
             }
         }
@@ -51,38 +52,57 @@ public class Round1 {
         @Override
         public void cleanup(Context context) throws IOException, InterruptedException {
             int curr_dec = CommonConstants.smallest_year;
-            logger.warn("Broadcasting N = " + N + "\tFrom " + Thread.currentThread());
 
             while (curr_dec <= CommonConstants.largest_year) {
                 context.write(new Gram2(curr_dec), new IntWritable(N));
                 curr_dec += 10;
             }
+        }
 
-            logger.warn("\nFinished Mapping for Round 1\n");
+        private void broadcast(Gram2 key, IntWritable val, Context context) throws IOException, InterruptedException {
+            key.setW2(new Text("*"));
+            int curr_dec = CommonConstants.smallest_year;
+
+            while (curr_dec <= CommonConstants.largest_year) {
+                context.write(key.setDecade(curr_dec), val);
+                curr_dec += 10;
+            }
         }
     }
 
     public static class ReducerClass extends Reducer<Gram2, IntWritable, Text, Text> {
 
+        private IntWritable lastW1_occ;
+
         @Override
         public void setup(Context context) {
-            logger.warn("\nStarting Reducing for Round 1...\n");
+            lastW1_occ = new IntWritable();
         }
 
         @Override
         public void reduce(Gram2 key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+            // 1. Merge Counts
             int w1_w2_occ = 0;
 
             for (IntWritable value : values)
                 w1_w2_occ += value.get();
 
-            logger.warn("New key for reducer: " + key.getW1() + "_" + key.getW2() + " " + key.getDecade() + "\tOccurrences: " + w1_w2_occ);
-            context.write(key.toText(), new Text(String.valueOf(w1_w2_occ)));
+            // 2. Check if N
+            if (key.is_N())
+                context.write(key.toText(), new Text(String.valueOf(w1_w2_occ)));
+
+                // 3. Check if new W1
+            else if (key.getW2().equals("*"))
+                lastW1_occ.set(w1_w2_occ);
+
+                // 4. If not add c(w1) to the value -> dec w1 w2 TAB c(w1,w2) c(w1)
+            else
+                context.write(key.toText(), new Text(w1_w2_occ + " " + lastW1_occ));
+
         }
 
         @Override
         public void cleanup(Context context) {
-            logger.warn("\nFinished Reducing for Round 1\n");
         }
     }
 
@@ -110,7 +130,13 @@ public class Round1 {
     }
 
     public static void main(String[] args) throws Exception {
-        logger = LoggerFactory.getLogger(Round1.class);
+        Logger logger = LoggerFactory.getLogger(Round1.class);
+
+        if (args.length != 2) {
+            logger.error("Usage: java -jar Round1.jar <input> <output>\n");
+            System.exit(-1);
+        }
+
         Configuration conf = new Configuration();
 
         Job job = Job.getInstance(conf, "Round 1");
@@ -147,7 +173,9 @@ public class Round1 {
 
         // Starting...
         logger.warn("Starting Round 1...");
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
-    }
+        int exitCode = job.waitForCompletion(true) ? 0 : 1;
+        logger.warn("Finished Round 1!");
 
+        System.exit(exitCode);
+    }
 }
