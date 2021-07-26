@@ -8,14 +8,20 @@ Google 2-gram
 
 ## Map Reduce model
 
-The input is from the **[Google 2-gram](http://storage.googleapis.com/books/ngrams/books/datasetsv2.html)** dataset: `ngram TAB year TAB match_count TAB volume_count NEWLINE`
+The input is from the **[Google 2-gram](http://storage.googleapis.com/books/ngrams/books/datasetsv2.html)** dataset: `ngram TAB year TAB match_count TAB volume_count NEWLINE`  
+Good ref: [Click Here](https://github.com/MaorRocky/Collocation-Extraction-Amazon-EMR)
+
+N           = total number of bi-grams in the corpus (number of rows)  
+c(w1, w2)   = count of the bigram w1w2 in a decade  
+c(w1)       = count of bigrams that starts with w1 in the entire corpus  
+c(w2)       = count of bigrams that ends with w2 in the entire corpus  
 
 ## Round 1
 
-Divide the dataset per decades
+In the first round we want to compute N, c(w1), c(w2) and 
 
 Map:
-input: "w1_w2 year occurences ?? ??"
+input: "w1_w2 year occurrences ?? ??"
 output: {K=year, V= {w1_w2, occurences}}
 
 Reduce:
