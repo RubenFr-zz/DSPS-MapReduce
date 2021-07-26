@@ -18,25 +18,38 @@ c(w2)       = count of bigrams that ends with w2 in the entire corpus
 
 ## Round 1
 
-In the first round we want to compute N, c(w1), c(w2) and 
+In the first round we want to compute N, c(w1) and c(w1,w2)
 
-Map:
-input: "w1_w2 year occurrences ?? ??"
-output: {K=year, V= {w1_w2, occurences}}
+### Map:
+__input:__ "w1_w2 year occurrences ?? ??"  
+__output:__ K = Gram2 Object, V = occurrences
 
-Reduce:
-input: List[{Y1, [w11,w12]},{Y2, [w21,w22]},...,{Yn,[wn1,wn2]}]
-output: List[{K=Y1, V=List[[w11,w12],[w21,w22],...,[wn1,wn2]},...,{K=Yn, V=List[[w11,w12],[w21,w22],...,[wn1,wn2]}}]
+### Shuffle and Sort:
+Distribute the K-V formed according to decades they're in  
+Sort them according to w1 and then w2
 
-1990 {w11_w12, occ1} {w21_w22, occ2} ... {wn1,wn2, occn}
-2000 ...
+### Reduce:
+__input:__ K = Gram2 Object,  V = [occ1, occ2, ...]  
+__output:__ `decade w1 w2 TAB c(w1, w2) c(w1)`
+
+> At the end of this Round we have 51 files (one per decade) with the value of N in each file.  
+> Each 2-gram is followed by its c(w1,w2)
+
+```text
+1800-1809 * N	695245
+1800-1809 OS 160	1
+1800-1809 Os_NOUN homini	21
+1800-1809 Osar _ADP_	2
+1800-1809 Osbaston _._	10
+1800-1809 Osbern _CONJ_	3
+```
 
 ## Round 2
 
 Count the number of times w1 and w2 appears each decade
 
 Map
-input: [w1,w2]
+input: decade TAB w1 w2 TAB c(w1,w2)
 output: {w1,1} {w2,1}
 
 Reduce
