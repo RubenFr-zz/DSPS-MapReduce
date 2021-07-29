@@ -1,11 +1,4 @@
-package Round1;
-
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.ec2.Ec2Client;
-import software.amazon.awssdk.services.emr.EmrClient;
-import software.amazon.awssdk.services.s3.S3Client;
+package LocalApplication;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -13,31 +6,18 @@ import java.util.HashSet;
 public class Constants {
 
     public enum COUNTERS {
-        NOT_COUNTED,
-        N
+        NOT_COUNTED
     }
 
-    /* Common names */
-    public static String BUCKET_NAME = "dsps12020-hadoop";
-
-    /* Easy access users */
-    public static S3Client s3;
-    public static Ec2Client ec2;
-    public static EmrClient emr;
-
-    /* Instances state */
-    public static int pending = 0;
-    public static int running = 16;
-    public static int shutting_down = 32;
-    public static int terminated = 48;
-    public static int stopping = 64;
-    public static int stopped = 80;
+    /* AWS values */
+    public static final String BUCKET_NAME = "dpsp-hadoop";
 
     /* Constants values */
-//    public static int smallest_year = 1500;
-//    public static int largest_year = 2020;
-    public static int smallest_year = 1590;
-    public static int largest_year = 2008;
+    public static int NumReduceTasks = 5;
+    public static int smallest_year = 1500;
+    public static int largest_year = 2020;
+
+    public static String gram2_address = "s3://datasets.elasticmapreduce/ngrams/books/20090715/heb-all/2gram/data";
 
 //    public static HashSet<String> stopWords = new HashSet<>(Arrays.asList(
 //            "״", "׳", "של", "רב", "פי", "עם", "עליו", "עליהם", "על", "עד", "מן", "מכל", "מי", "מהם", "מה", "מ", "למה", "לכל", "לי", "לו", "להיות", "לה", "לא", "כן", "כמה", "כלי", "כל", "כי"
