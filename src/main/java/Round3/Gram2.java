@@ -12,18 +12,12 @@ public class Gram2 implements WritableComparable<Gram2> {
 
     private final Text w1;
     private final Text w2;
-    private IntWritable decade;
+    private final IntWritable decade;
 
     public Gram2() {
         w1 = new Text("*");
         w2 = new Text("*");
         decade = new IntWritable(0);
-    }
-
-    public Gram2(Text w1, Text w2, IntWritable dec) {
-        this.w1 = w1;
-        this.w2 = w2;
-        this.decade = new IntWritable((dec.get() / 10) * 10);
     }
 
     public Gram2(Text w1, Text w2, int dec) {
@@ -81,7 +75,7 @@ public class Gram2 implements WritableComparable<Gram2> {
         return this.w2.toString();
     }
 
-    public boolean is_N() {
+    public boolean isRelativePMI() {
         return this.w1.toString().equals("*") && this.w2.toString().equals("*");
     }
 
@@ -91,7 +85,7 @@ public class Gram2 implements WritableComparable<Gram2> {
     }
 
     public Text toText() {
-        return new Text(this.decade + "-" + (this.decade.get() + 9) + " " + this.w1 + " " + this.w2);
+        return new Text(this.decade + "-" + (this.decade.get() + 9) + "\t" + this.w1 + " " + this.w2);
     }
 
 }
