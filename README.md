@@ -22,66 +22,87 @@ In the first round we want to compute N, c(w1) and c(w1,w2)
 
 ### Map:
 __input:__ "w1_w2 year occurrences ?? ??"  
-__output:__ K = Gram2 Object, V = occurrences
+__output 1:__ K = decade w1 w2, V = occurrences  
+__output 2:__ K = decade w1 *, V = occurrences  
+__output 3:__ K = decade * w2, V = occurrences  
 
 ### Shuffle and Sort:
 Distribute the K-V formed according to decades they're in  
-Sort them according to w1 and then w2
+Sort them according to w1 and then w2 (gram containing * are before everything)
 
 ### Reduce:
-__input:__ K = Gram2 Object,  V = [occ1, occ2, ...]  
-__output:__ `decade w1 w2 TAB c(w1, w2) c(w1)`
+__input 1:__ K = decade w1 *,  V = [occ1, occ2, ...]  
+__input 2:__ K = decade * w2,  V = [occ1, occ2, ...]  
+__input 3:__ K = decade w1 w2,  V = [occ1, occ2, ...]  
+__output:__ `decade w1 w2 TAB c_w1_w2 c_w1 (or c_w2) N`
 
-> At the end of this Round we have 51 files (one per decade) with the value of N in each file.  
-> Each 2-gram is followed by its c(w1,w2) and c(w1)
+> At the end of this Round we have 10 files (5 for c_w1 and 5 for c_w2).
 
 ```text
-2000-2009 * *	699925
-2000-2009 O'Scannlain_NOUN _CONJ_	43 77
-2000-2009 O'Shannassy_NOUN ,_.	49 134
-2000-2009 O'Shea_NOUN a_DET	54 316
-2000-2009 O'Shea_NOUN describes	13 316
-2000-2009 O'Sullivan refers_VERB	37 68
-2000-2009 O.S B._NOUN	2 104
-2000-2009 O.S.E. _NOUN_	51 287
-2000-2009 O.S.R._NOUN _NOUN_	16 132
+1670 אבא בעיר	4 145540 522190510
+1700 אבא עוד	1 145540 522190510
+1750 אבא אבוה	2 145540 522190510
+1750 אבא באהל	1 145540 522190510
+1760 אבא ושלא	1 145540 522190510
+1790 אבא אבוה	1 145540 522190510
+1790 אבא וכו	1 145540 522190510
+1790 אבא כתב	1 145540 522190510
+1790 אבא מרי	3 145540 522190510
+1790 אבא שמואל	1 145540 522190510
+1800 אבא לבאר	1 145540 522190510
+1800 אבא לביתך	1 145540 522190510
 ```
 
 ## Round 2
 
-Count the number of times w1 and w2 appears each decade
-
-Map
-input: decade TAB w1 w2 TAB c(w1,w2)
-output: {w1,1} {w2,1}
-
-Reduce
-input: List[{w1,1},{w1,1}...]
-ouput: {K=w1, V=10}
-
-## Round 3
-
-Compute the npmi
+Regroupment of all parameters and Calculation of nmpi  
 
 ```LaTex
 npmi(w1,w2)=\frac{pmi(w1,w2)}{-log[p(w1,w2)]}
 pmi(w1,w2)=log[c(w1,w2)]+log(N)-log(c(w1))-log(c(w2))
 ```
 
-Map:
-input: w1_w2 x w1 y w2 z N
-output: w1_w2 N x y z
+### Map:
+__input:__ "decade w1 w2 TAB c_w1_w2 c_w1 (or c_w2) N"  
+__output:__ K = Gram2 Object, V = c_w1_w2 c_w1 (or c_w2) N  
 
-Reduce:
-input: 1_w2 N x y z
-output:	w1_w2 npmi(w1,w2)
+> The mapper doesn't do anything but restructure the input 
 
-## Round 4
+### Shuffle and Sort:
+According to if we want to calculate c_w1 or c_w2 we sort the mapper outputs
+based on w1 or w2 (* are always prioritized)  
+If same w1 or w2 then sort by decade
 
-Compare the npmi's obtained in Round 3 and add them to the final list if 
+### Reduce:
+__input:__ K = Gram2 Object,  V = [c_w1_w2 c_w1 N, c_w1_w2 c_w2 N]  
+__output:__ `decade w1 w2 TAB npmi`
+
+> At the end of this Round we have 5 files regrouping all the corpus npmi's
+
+## Round 3
+
+Compute the relative npmi and filter out not high enough values
+
 ```LaTex
-npmi < minPmi AND npmi < relMinPmi
+rel_npmi(w1,w2)=\frac{npmi(w1,w2)}{\sum_{j} npmi_{j}}
 ```
 
-Map:
-input: w1_w2 npmi
+```text
+Filter out if: npmi < minPmi OR rel_npmi < relMinPmi
+```
+
+### Map:
+__input:__ "decade w1 w2 TAB npmi"  
+__output 1:__ K = decade w1 w2, V = npmi  
+__output 2:__ K = decade *  *, V = npmi
+
+> In order to compute the relative npmi we need to find 
+
+### Shuffle and Sort:
+No need to shuffle -> only 1 reducer
+Sort according to Decade then W1 and finally W2
+
+### Reduce:
+__input 1:__ K = decade *  *, V = npmi  
+__input 2:__ K = decade w1 w2, V = [npmi_1, npmi_2, ...]  
+__output:__ `decade w1 w2 TAB Normalized PMI = npmi(w1,w2)`
