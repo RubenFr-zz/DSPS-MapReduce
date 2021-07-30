@@ -6,7 +6,7 @@ import java.util.HashSet;
 public class Constants {
 
     public enum COUNTERS {
-        NOT_COUNTED
+        COUNTED, NOT_COUNTED, POSITIVE
     }
 
     /* AWS values */
