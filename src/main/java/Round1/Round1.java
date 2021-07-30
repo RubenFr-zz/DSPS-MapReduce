@@ -11,7 +11,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.slf4j.Logger;
@@ -21,17 +21,15 @@ import java.io.IOException;
 
 public class Round1 {
 
-    public static Logger logger;
-
     public static class MapperClass extends Mapper<LongWritable, Text, Gram2, IntWritable> {
 
         private int N;
-        private int sent;
+//        private int sent;
 
         @Override
         public void setup(Context context) {
             N = 0;
-            sent = 0;
+//            sent = 0;
         }
 
         @Override
@@ -42,52 +40,42 @@ public class Round1 {
             IntWritable dec = new IntWritable(Integer.parseInt(data[1]));
             IntWritable occ = new IntWritable(Integer.parseInt(data[2]));
 
-            if (!isValid(gram) || sent > 10000)
-//            if (!isValid(gram))
+//            if (!isValid(gram) || sent > 10000)
+            if (!isValid(gram))
                 context.getCounter(Constants.COUNTERS.NOT_COUNTED).increment(1L);
             else {
+                context.getCounter(Constants.COUNTERS.COUNTED).increment(1L);
                 N += occ.get();
-                sent += 1;
+//                sent += 1;
 
-                // Broadcast to every reducer K = dec w1 *, V = occ (to count the 2grams starting with w1 in the entire corpus)
-                broadcast(new Gram2(new Text(gram[0]), new Text("*"), 0), occ, context);    // c(w1)
-                broadcast(new Gram2(new Text("*"), new Text(gram[1]), 1), occ, context);    // c(w2)
+                // K = dec w1 *, V = occ (to count the 2grams starting with w1 in the entire corpus)
+                // K = dec * w2, V = occ (to count the 2grams ending with w2 in the entire corpus)
+                context.write(new Gram2(new Text(gram[0]), new Text("*"), 1), occ);
+                context.write(new Gram2(new Text("*"), new Text(gram[1]), 2), occ);
 
-                // Submit K = dec w1 w2, V = occ (to count the recurrence of this 2gram in the decade)
-                context.write(new Gram2(new Text(gram[0]), new Text(gram[1]), dec, 0), occ);
-                context.write(new Gram2(new Text(gram[0]), new Text(gram[1]), dec, 1), occ);
+                // K = dec w1 w2, V = occ (to count the recurrence of this 2gram in the decade)
+                context.write(new Gram2(new Text(gram[0]), new Text(gram[1]), dec,1), occ);
+                context.write(new Gram2(new Text(gram[0]), new Text(gram[1]), dec,2), occ);
             }
         }
 
         @Override
         public void cleanup(Context context) throws IOException, InterruptedException {
-            int numOfReducers = Constants.NumReduceTasks;
 
-            // Send to every decade the value of N
-            for (int i = 0; i < numOfReducers; ++i) {
-                context.write(new Gram2().setType(0), new IntWritable(N));
-                context.write(new Gram2().setType(1), new IntWritable(N));
-            }
-        }
-
-        // Broadcast to every decade the same K-V (except for the decade's value)
-        private void broadcast(Gram2 key, IntWritable val, Context context) throws IOException, InterruptedException {
-            int curr_dec = Constants.smallest_year;
-
-            while (curr_dec <= Constants.largest_year) {
-                key.setDecade(curr_dec);
-                context.write(key, val);
-                curr_dec += 10;
+            // Send to every reducer the value of N
+            for (int i = 0; i < Constants.NumReduceTasks; ++i) {
+                context.write(new Gram2(i,1), new IntWritable(N));  // w1 *
+                context.write(new Gram2(i,2), new IntWritable(N));  // * w2
             }
         }
 
         private boolean isValid(String[] gram) {
             return gram.length == 2 &&
-                    isHebrew(gram[0]) &&
-                    isHebrew(gram[1]);
+                    isValid(gram[0]) &&
+                    isValid(gram[1]);
         }
 
-        private boolean isHebrew(String word) {
+        private boolean isValid(String word) {
             return word.matches ("^[א-ת]+$") && !Constants.stopWords.contains(word);
         }
     }
@@ -95,46 +83,35 @@ public class Round1 {
     public static class ReducerClass extends Reducer<Gram2, IntWritable, Text, Text> {
 
         private IntWritable N;
-        private IntWritable lastW1_occ;
-        private IntWritable lastW2_occ;
+        private IntWritable last_occ;
 
         @Override
         public void setup(Context context) {
             N = new IntWritable();
-            lastW1_occ = new IntWritable();
-            lastW2_occ = new IntWritable();
+            last_occ = new IntWritable();
         }
 
         @Override
         public void reduce(Gram2 key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
 
             // 1. Merge Counts
-            int w1_w2_occ = 0;
+            int sum = 0;
 
             for (IntWritable value : values)
-                w1_w2_occ += value.get();
+                sum += value.get();
 
             // 2. Check if N
             if (key.is_N())
-                N.set(w1_w2_occ);
+                N.set(sum);
 
             // 3. Check if new W1
-            else if (key.getW2().equals("*"))
-                lastW1_occ.set(w1_w2_occ);
+            else if (key.isW1Star() || key.isW2Star())
+                last_occ.set(sum);
 
-            // 4. Check if new W2
-            else if (key.getW1().equals("*"))
-                lastW2_occ.set(w1_w2_occ);
+            // 4. If not add c(w1/2) to the value -> dec w1 w2 TAB c(w1,w2) c(w1/2) N
+            else
+                context.write(key.toText(), new Text(sum + " " +  last_occ + " " + N));
 
-            // 5. If not add c(w1/2) to the value -> dec w1 w2 TAB c(w1,w2) c(w1/2) N
-            else {
-                IntWritable occ = key.getType() == 0 ? lastW1_occ : lastW2_occ;
-                context.write(key.toText(), new Text(w1_w2_occ + " " +  occ + " " + N));
-            }
-        }
-
-        @Override
-        public void cleanup(Context context) {
         }
     }
 
@@ -143,32 +120,39 @@ public class Round1 {
         @Override
         public void reduce(Gram2 key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
 
-            int w1_w2_occ = 0;
+            int sum = 0;
 
             for (IntWritable value : values)
-                w1_w2_occ += value.get();
+                sum += value.get();
 
-            context.write(key, new IntWritable(w1_w2_occ));
+            context.write(key, new IntWritable(sum));
+
         }
     }
 
     public static class PartitionerClass extends Partitioner<Gram2, IntWritable> {
 
-        // Ensure that keys with the same decade are directed to the same reducer
         @Override
         public int getPartition(Gram2 key, IntWritable value, int numPartitions) {
-            int res = key.getDecade() % Constants.NumReduceTasks;
+            if (key.is_N()) {
+                int part = key.getDecade() % Constants.NumReduceTasks;
+                if (key.getType() == 2)
+                    part += Constants.NumReduceTasks;
+                return part;
+            }
 
+            // Divide Type 1 and Type 2
             if (key.getType() == 1)
-                res += Constants.NumReduceTasks;
+                return Math.abs(key.getW1().hashCode()) % Constants.NumReduceTasks;
+            if (key.getType() == 2)
+                return Math.abs(key.getW2().hashCode() % Constants.NumReduceTasks) + Constants.NumReduceTasks;
 
-            return res;
+            return -1;  // ILLEGAL
         }
     }
 
     public static void main(String[] args) throws Exception {
-
-        logger = LoggerFactory.getLogger(Round1.class);
+        Logger logger = LoggerFactory.getLogger(Round1.class);
 
         if (args.length != 3) {
             logger.error("Usage: java -jar Round1.jar <input> <output>\n");
@@ -178,7 +162,6 @@ public class Round1 {
         }
 
         Configuration conf = new Configuration();
-//        conf.set("minPmi", args[2]);
 
         Job job = Job.getInstance(conf, "Round 1");
         job.setJarByClass(Round1.class);
@@ -205,8 +188,8 @@ public class Round1 {
         job.setOutputValueClass(Text.class);
 
         // Input and Output format for data
-        job.setInputFormatClass(TextInputFormat.class);
-//        job.setInputFormatClass(SequenceFileInputFormat.class);
+//        job.setInputFormatClass(TextInputFormat.class);
+        job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
         // File Input and Output paths
