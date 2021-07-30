@@ -10,7 +10,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -35,6 +35,10 @@ public class Round2 {
 
             context.write(new Gram2(key[1], key[2], new IntWritable(dec)), new Text(data[1]));
         }
+
+        @Override
+        public void cleanup(Context context) {
+        }
     }
 
     public static class ReducerClass extends Reducer<Gram2, Text, Text, Text> {
@@ -46,32 +50,35 @@ public class Round2 {
             Iterator<Text> it = values.iterator();
             String[] first = it.next().toString().split(" ");
             String[] second = it.next().toString().split(" ");
-            double pmi = compute_pmi(first[2], first[0], first[1], second[2]);
+            double pmi = compute_pmi(first[2], first[0], first[1], second[1]);
+
+            if (pmi >= 0) {
+                context.getCounter(Constants.COUNTERS.POSITIVE).increment(1L);
+            }
 
             // 2. Write the result
-            context.write(key.toText(), new Text(String.valueOf(pmi)));
+            context.write(key.toText(),
+                    new Text(String.valueOf(pmi))
+//                    new Text("N=" + first[2] + "\tc_w1_w2=" + first[0] + "\tc_w1=" + first[1] + "\tc_w2=" + second[1] + "\t-> PMI = " + pmi)
+            );
         }
 
-        @Override
-        public void cleanup(Context context) {
-        }
-
-        public double compute_pmi (String N_str, String c_w1_w2_str, String c_w1_str, String c_w2_str) {
+        public double compute_pmi(String N_str, String c_w1_w2_str, String c_w1_str, String c_w2_str) {
             double N = Double.parseDouble(N_str);
             double c_w1_w2 = Double.parseDouble(c_w1_w2_str);
             double c_w1 = Double.parseDouble(c_w1_str);
             double c_w2 = Double.parseDouble(c_w2_str);
-            return Math.log(c_w1_w2) + Math.log(N) - Math.log(c_w1) - Math.log(c_w2);
+            return Math.log10(c_w1_w2) + Math.log10(N) - Math.log10(c_w1) - Math.log10(c_w2);
         }
     }
 
 
-    public static class PartitionerClass extends Partitioner<Text, IntWritable> {
+    public static class PartitionerClass extends Partitioner<Gram2, Text> {
 
         // Ensure that keys with the same decade are directed to the same reducer
         @Override
-        public int getPartition(Text key, IntWritable value, int numPartitions) {
-            return key.toString().split(" ")[0].hashCode() % numPartitions;
+        public int getPartition(Gram2 key, Text value, int numPartitions) {
+            return key.getDecade() % numPartitions;
         }
     }
 
@@ -80,7 +87,7 @@ public class Round2 {
         logger = LoggerFactory.getLogger(Round2.class);
 
         if (args.length != 3) {
-            logger.error("Usage: java -jar Round1.jar <input> <output>\n");
+            logger.error("Usage: java -jar Round1.jar Round1 <input> <output>\n");
             for (int i = 0; i < args.length; i++)
                 logger.error("Argument " + i + ": " + args[i]);
             System.exit(-1);
@@ -96,9 +103,6 @@ public class Round2 {
 
         // Set partitioner
         job.setPartitionerClass(PartitionerClass.class);
-
-        // Set combiner
-//        job.setCombinerClass(CombinerClass.class);
 
         // Set reducer
         job.setReducerClass(ReducerClass.class);
@@ -118,8 +122,9 @@ public class Round2 {
         job.setOutputFormatClass(TextOutputFormat.class);
 
         // File Input and Output paths
-        FileInputFormat.addInputPath(job, new Path(args[1]));
         FileOutputFormat.setOutputPath(job, new Path(args[2]));
+        for (int i = 0; i < Constants.NumReduceTasks * 2; ++i)
+            MultipleInputs.addInputPath(job, new Path(args[1] + "/part-r-0000" + i), TextInputFormat.class);
 
         // Starting...
         logger.warn("Starting Round 2...");

@@ -39,7 +39,7 @@ public class Gram2 implements WritableComparable<Gram2> {
         // if this.w1 == other.w1, put <w1, *> before <w1,w2>
         int res;
 
-        if ((res = this.getDecade().get() - other.getDecade().get()) != 0)      // Decade
+        if ((res = this.getDecade() - other.getDecade()) != 0)      // Decade
             return res;
 
         else if ((res = this.getW1().compareTo(other.getW1())) != 0)            // W1
@@ -63,8 +63,8 @@ public class Gram2 implements WritableComparable<Gram2> {
         decade.readFields(dataInput);
     }
 
-    public IntWritable getDecade() {
-        return this.decade;
+    public int getDecade() {
+        return this.decade.get() / 10;
     }
 
     public String getW1() {
