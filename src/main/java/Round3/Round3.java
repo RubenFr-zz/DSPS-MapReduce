@@ -18,8 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 public class Round3 {
 
@@ -31,13 +29,14 @@ public class Round3 {
             String[] data = line.toString().split("\t");
             String[] key = data[0].split(" ");
             int dec = Integer.parseInt(key[0]);
-            double pmi = Double.parseDouble(data[1]);
+            double npmi = Double.parseDouble(data[1]);
 
-            // Submit K = dec w1 w2, V = occ (to count the recurrence of this 2gram in the decade)
-            context.write(new Gram2(dec), new DoubleWritable(pmi));
-            context.write(new Gram2(new Text(key[1]), new Text(key[2]), dec), new DoubleWritable(pmi));
+            // Submit K = dec * *, V = npmi (to compute the sum of all normalized pmi in the same decade)
+            context.write(new Gram2(dec), new DoubleWritable(npmi));
+
+            // Submit K = dec w1 w2, V = npmi
+            context.write(new Gram2(new Text(key[1]), new Text(key[2]), dec, npmi), new DoubleWritable(npmi));
         }
-
     }
 
     public static class ReducerClass extends Reducer<Gram2, DoubleWritable, Text, Text> {
@@ -56,23 +55,26 @@ public class Round3 {
         @Override
         public void reduce(Gram2 key, Iterable<DoubleWritable> values, Context context) throws IOException, InterruptedException {
 
-            // 1. If new decade compute key
+            // 1. Sum the values
+            double npmi = 0.0;
+            for (DoubleWritable value : values)
+                npmi += value.get();
+
+            // 2. If new decade compute key -> update pmi_decade
             if (key.isRelativePMI()) {
-
-                int sum = 0;
-                for (DoubleWritable value : values)
-                    sum += value.get();
-
-                pmi_decade = sum;
-                return;
+                pmi_decade = npmi;
             }
 
-            // 2. Compare and write only PMIs above given parameters
-            double pmi = values.iterator().next().get();
-            double relativePmi = pmi / pmi_decade;
+            // 3. Compare and write only PMIs above given parameters
+            else {
+                double relativePmi = npmi / pmi_decade;
 
-            if (pmi >= minPmi && relativePmi >= relMinPmi)
-                context.write(key.toText(), new Text("Relative PMI: " + pmi));
+                if (npmi >= minPmi && relativePmi >= relMinPmi) {
+                    context.write(key.toText(), new Text());
+                    context.getCounter(Constants.COUNTERS.NOT_FILTERED).increment(1L);
+                } else
+                    context.getCounter(Constants.COUNTERS.FILTERED).increment(1L);
+            }
         }
     }
 
@@ -80,23 +82,12 @@ public class Round3 {
 
         @Override
         public void reduce(Gram2 key, Iterable<DoubleWritable> values, Context context) throws IOException, InterruptedException {
-            if (key.isRelativePMI()) {
-                int sum = 0;
+            double sum = 0.0;
 
-                for (DoubleWritable value : values)
-                    sum += value.get();
+            for (DoubleWritable value : values)
+                sum += value.get();
 
-                context.write(key, new DoubleWritable(sum));
-            } else
-                context.write(key, new DoubleWritable(round(values.iterator().next().get(),5)));
-        }
-
-        public static double round(double value, int places) {
-            if (places < 0) throw new IllegalArgumentException();
-
-            BigDecimal bd = BigDecimal.valueOf(value);
-            bd = bd.setScale(places, RoundingMode.HALF_UP);
-            return bd.doubleValue();
+            context.write(key, new DoubleWritable(sum));
         }
     }
 
