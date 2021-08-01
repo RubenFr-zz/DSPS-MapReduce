@@ -24,12 +24,10 @@ public class Round1 {
     public static class MapperClass extends Mapper<LongWritable, Text, Gram2, IntWritable> {
 
         private int N;
-//        private int sent;
 
         @Override
         public void setup(Context context) {
             N = 0;
-//            sent = 0;
         }
 
         @Override
@@ -40,13 +38,11 @@ public class Round1 {
             IntWritable dec = new IntWritable(Integer.parseInt(data[1]));
             IntWritable occ = new IntWritable(Integer.parseInt(data[2]));
 
-//            if (!isValid(gram) || sent > 10000)
             if (!isValid(gram))
                 context.getCounter(Constants.COUNTERS.NOT_COUNTED).increment(1L);
             else {
                 context.getCounter(Constants.COUNTERS.COUNTED).increment(1L);
                 N += occ.get();
-//                sent += 1;
 
                 // K = dec w1 *, V = occ (to count the 2grams starting with w1 in the entire corpus)
                 // K = dec * w2, V = occ (to count the 2grams ending with w2 in the entire corpus)
@@ -188,7 +184,6 @@ public class Round1 {
         job.setOutputValueClass(Text.class);
 
         // Input and Output format for data
-//        job.setInputFormatClass(TextInputFormat.class);
         job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
