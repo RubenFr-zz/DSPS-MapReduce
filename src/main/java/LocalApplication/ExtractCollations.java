@@ -13,13 +13,15 @@ import java.io.IOException;
 public class ExtractCollations {
 
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.err.println("Usage: java -jar Local.jar <minPmi> <relMinPmi>\n");
+        if (args.length != 3) {
+            System.err.println("Usage: java -jar ass2.jar ExtractCollations <minPmi> <relMinPmi>\n");
+            for (int i = 0; i < args.length; i++)
+                System.err.println("Argument " + i + ": " + args[i]);
             System.exit(-1);
         }
 
-        String minPmi = args[0];
-        String relMinPmi = args[1];
+        String minPmi = args[1];
+        String relMinPmi = args[2];
 
         StorageService s3 = new StorageService(Constants.BUCKET_NAME);
 
@@ -71,7 +73,6 @@ public class ExtractCollations {
 
         // 5. Run Application
         EMRService emr = new EMRService();
-
         String jobFlowId = emr.runApplication(stepConfigRound1, stepConfigRound2, stepConfigRound3);
         System.out.println("Ran job flow with id: " + jobFlowId);
 }
