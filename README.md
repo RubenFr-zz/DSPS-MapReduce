@@ -104,4 +104,20 @@ Sort according to Decade then to npmi then W1 and finally W2
 ### Reduce:
 __input 1:__ K = decade *  *, V = npmi  
 __input 2:__ K = decade w1 w2, V = [npmi_1, npmi_2, ...]  
-__output:__ `decade w1 w2 TAB Normalized PMI = npmi(w1,w2)`
+__output:__ `decade TAB TAB npmi = npmi(w1,w2) TAB TAB w1 w2`
+
+```text
+1530-1539		nmpi = 0.59042		מפתיה והולכתיה	
+1530-1539		nmpi = 0.51307		בפוך אבניך	
+1540-1549		nmpi = 0.61224		גמלתי שולמי	
+1540-1549		nmpi = 0.61023		הכמתא להכימין	
+1540-1549		nmpi = 0.60632		האודם והלובן	
+1540-1549		nmpi = 0.60073		מהשבותי מהשבותיכם	
+1540-1549		nmpi = 0.59042		שרותיה תענינה	
+1540-1549		nmpi = 0.5888		וארפאהו ואנחהו	
+1540-1549		nmpi = 0.56647		מזכיותיו מטיבין	
+1540-1549		nmpi = 0.56066		ההנאות הגופיות	
+1540-1549		nmpi = 0.5562		וירעיבך ויאכילך	
+1540-1549		nmpi = 0.55052		עוזך וכבודך	
+1540-1549		nmpi = 0.54999		מועדיה ותור	
+```
