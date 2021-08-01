@@ -24,7 +24,7 @@ public class EMRService {
                 .masterInstanceType(InstanceType.M4_XLARGE.toString())
                 .slaveInstanceType(InstanceType.M4_XLARGE.toString())
                 .hadoopVersion("2.7.2")
-                .ec2KeyName("ec2-java-ssh")
+                .ec2KeyName("aws-ssh")
                 .keepJobFlowAliveWhenNoSteps(false)
                 .placement(PlacementType.builder().availabilityZone("us-east-1a").build())
                 .build();
