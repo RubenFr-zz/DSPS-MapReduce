@@ -22,8 +22,6 @@ import java.util.Iterator;
 
 public class Round2 {
 
-    public static Logger logger;
-
     public static class MapperClass extends Mapper<LongWritable, Text, Gram2, Text> {
 
         @Override
@@ -50,28 +48,26 @@ public class Round2 {
             Iterator<Text> it = values.iterator();
             String[] first = it.next().toString().split(" ");
             String[] second = it.next().toString().split(" ");
-            double pmi = compute_pmi(first[2], first[0], first[1], second[1]);
+            double npmi = compute_npmi(first[2], first[0], first[1], second[1]);
 
-            if (pmi >= 0) {
+            if (npmi >= 0)
                 context.getCounter(Constants.COUNTERS.POSITIVE).increment(1L);
-            }
+            else
+                context.getCounter(Constants.COUNTERS.NEGATIVE).increment(1L);
 
             // 2. Write the result
-            context.write(key.toText(),
-                    new Text(String.valueOf(pmi))
-//                    new Text("N=" + first[2] + "\tc_w1_w2=" + first[0] + "\tc_w1=" + first[1] + "\tc_w2=" + second[1] + "\t-> PMI = " + pmi)
-            );
+            context.write(key.toText(), new Text(String.valueOf(npmi)));
         }
 
-        public double compute_pmi(String N_str, String c_w1_w2_str, String c_w1_str, String c_w2_str) {
+        public double compute_npmi(String N_str, String c_w1_w2_str, String c_w1_str, String c_w2_str) {
             double N = Double.parseDouble(N_str);
             double c_w1_w2 = Double.parseDouble(c_w1_w2_str);
             double c_w1 = Double.parseDouble(c_w1_str);
             double c_w2 = Double.parseDouble(c_w2_str);
-            return Math.log10(c_w1_w2) + Math.log10(N) - Math.log10(c_w1) - Math.log10(c_w2);
+            double pmi = Math.log10(c_w1_w2) + Math.log10(N) - Math.log10(c_w1) - Math.log10(c_w2);
+            return pmi / (- Math.log10(c_w1_w2 / N));
         }
     }
-
 
     public static class PartitionerClass extends Partitioner<Gram2, Text> {
 
@@ -84,10 +80,10 @@ public class Round2 {
 
     public static void main(String[] args) throws Exception {
 
-        logger = LoggerFactory.getLogger(Round2.class);
+        Logger logger = LoggerFactory.getLogger(Round2.class);
 
         if (args.length != 3) {
-            logger.error("Usage: java -jar Round1.jar Round1 <input> <output>\n");
+            logger.error("Usage: java -jar Round2.jar Round2 <input> <output>\n");
             for (int i = 0; i < args.length; i++)
                 logger.error("Argument " + i + ": " + args[i]);
             System.exit(-1);
@@ -95,7 +91,7 @@ public class Round2 {
 
         Configuration conf = new Configuration();
 
-        Job job = Job.getInstance(conf, "Round 1");
+        Job job = Job.getInstance(conf, "Round 2");
         job.setJarByClass(Round2.class);
 
         // Set mapper
@@ -118,7 +114,6 @@ public class Round2 {
 
         // Input and Output format for data
         job.setInputFormatClass(TextInputFormat.class);
-//        job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
         // File Input and Output paths
