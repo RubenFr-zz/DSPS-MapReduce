@@ -57,9 +57,9 @@ __output:__ `decade w1 w2 TAB c_w1_w2 c_w1 (or c_w2) N`
 
 Regroupment of all parameters and Calculation of nmpi  
 
-```LaTex
-npmi(w1,w2)=\frac{pmi(w1,w2)}{-log[p(w1,w2)]}
-pmi(w1,w2)=log[c(w1,w2)]+log(N)-log(c(w1))-log(c(w2))
+```text
+npmi(w1,w2) = pmi(w1,w2) / -log[p(w1,w2)]
+pmi(w1,w2) = log[c(w1,w2)] + log(N) - log[c(w1)] - log[c(w2)]
 ```
 
 ### Map:
@@ -83,8 +83,9 @@ __output:__ `decade w1 w2 TAB npmi`
 
 Compute the relative npmi and filter out not high enough values
 
-```LaTex
-rel_npmi(w1,w2)=\frac{npmi(w1,w2)}{\sum_{j} npmi_{j}}
+```text
+rel_npmi(w1,w2) = npmi(w1,w2) / relativePmi(dec)  
+relativePmi(dec) is the sum of all normalized pmi in the same decade (including those which their normalized PMI is less than minPmi)
 ```
 
 ```text
@@ -96,11 +97,9 @@ __input:__ "decade w1 w2 TAB npmi"
 __output 1:__ K = decade w1 w2, V = npmi  
 __output 2:__ K = decade *  *, V = npmi
 
-> In order to compute the relative npmi we need to find 
-
 ### Shuffle and Sort:
 No need to shuffle -> only 1 reducer
-Sort according to Decade then W1 and finally W2
+Sort according to Decade then to npmi then W1 and finally W2
 
 ### Reduce:
 __input 1:__ K = decade *  *, V = npmi  
