@@ -6,16 +6,14 @@ import java.util.HashSet;
 public class Constants {
 
     public enum COUNTERS {
-        COUNTED, NOT_COUNTED, POSITIVE
+        COUNTED, NOT_COUNTED, POSITIVE, NEGATIVE, FILTERED, NOT_FILTERED
     }
 
     /* AWS values */
-    public static final String BUCKET_NAME = "dpsp-hadoop";
+    public static final String BUCKET_NAME = "dsps-hadoop";
 
     /* Constants values */
     public static int NumReduceTasks = 5;
-    public static int smallest_year = 1500;
-    public static int largest_year = 2020;
 
     public static String gram2_address = "s3://datasets.elasticmapreduce/ngrams/books/20090715/heb-all/2gram/data";
 
