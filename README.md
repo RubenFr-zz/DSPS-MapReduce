@@ -53,6 +53,37 @@ __output:__ `decade w1 w2 TAB c_w1_w2 c_w1 (or c_w2) N`
 1800 אבא לביתך	1 145540 522190510
 ```
 
+```text
+Map-Reduce Framework
+		Map input records=252069581
+		Map output records=464423694
+		Map output bytes=13123551456
+		Map output materialized bytes=471683939
+		Input split bytes=5304
+		Combine input records=518959514
+		Combine output records=108794567
+		Reduce input groups=52795887
+		Reduce shuffle bytes=471683939
+		Reduce input records=54258747
+		Reduce output records=52535564
+		Spilled Records=163593534
+		Shuffled Maps =390
+		Failed Shuffles=0
+		Merged Map outputs=390
+		GC time elapsed (ms)=284624
+		CPU time spent (ms)=17763560
+		Physical memory (bytes) snapshot=47255109632
+		Virtual memory (bytes) snapshot=166547787776
+		Total committed heap usage (bytes)=42389733376
+		Peak Map Physical memory (bytes)=891564032
+		Peak Map Virtual memory (bytes)=3167502336
+		Peak Reduce Physical memory (bytes)=1353326592
+		Peak Reduce Virtual memory (bytes)=4540825600
+LocalApplication.Constants$COUNTERS
+		COUNTED=116105826
+		NOT_COUNTED=135963755
+```
+
 ## Round 2
 
 Regroupment of all parameters and Calculation of nmpi  
@@ -78,6 +109,37 @@ __input:__ K = Gram2 Object,  V = [c_w1_w2 c_w1 N, c_w1_w2 c_w2 N]
 __output:__ `decade w1 w2 TAB npmi`
 
 > At the end of this Round we have 5 files regrouping all the corpus npmi's
+
+```text
+Map-Reduce Framework
+		Map input records=52535564
+		Map output records=52535564
+		Map output bytes=2242112215
+		Map output materialized bytes=802475985
+		Input split bytes=9560
+		Combine input records=0
+		Combine output records=0
+		Reduce input groups=26267782
+		Reduce shuffle bytes=802475985
+		Reduce input records=52535564
+		Reduce output records=26267782
+		Spilled Records=105071128
+		Shuffled Maps =200
+		Failed Shuffles=0
+		Merged Map outputs=200
+		GC time elapsed (ms)=49624
+		CPU time spent (ms)=1910560
+		Physical memory (bytes) snapshot=43059515392
+		Virtual memory (bytes) snapshot=147474329600
+		Total committed heap usage (bytes)=41073770496
+		Peak Map Physical memory (bytes)=1070473216
+		Peak Map Virtual memory (bytes)=3177353216
+		Peak Reduce Physical memory (bytes)=1837010944
+		Peak Reduce Virtual memory (bytes)=4466647040
+LocalApplication.Constants$COUNTERS
+		NEGATIVE=10570157
+		POSITIVE=15697625
+```
 
 ## Round 3
 
@@ -121,3 +183,34 @@ __output:__ `decade TAB TAB npmi = npmi(w1,w2) TAB TAB w1 w2`
 1540-1549		nmpi = 0.55052		עוזך וכבודך	
 1540-1549		nmpi = 0.54999		מועדיה ותור	
 ```
+
+```text
+Map-Reduce Framework
+		Map input records=26267782
+		Map output records=52535564
+		Map output bytes=1686599606
+		Map output materialized bytes=662789680
+		Input split bytes=4780
+		Combine input records=52535564
+		Combine output records=26267830
+		Reduce input groups=26267815
+		Reduce shuffle bytes=662789680
+		Reduce input records=26267830
+		Reduce output records=420576
+		Spilled Records=52535660
+		Shuffled Maps =20
+		Failed Shuffles=0
+		Merged Map outputs=20
+		GC time elapsed (ms)=24787
+		CPU time spent (ms)=1186810
+		Physical memory (bytes) snapshot=19906605056
+		Virtual memory (bytes) snapshot=67160264704
+		Total committed heap usage (bytes)=18656264192
+		Peak Map Physical memory (bytes)=1101332480
+		Peak Map Virtual memory (bytes)=3162398720
+		Peak Reduce Physical memory (bytes)=2311213056
+		Peak Reduce Virtual memory (bytes)=4462874624
+LocalApplication.Constants$COUNTERS
+		FILTERED=25847206
+		NOT_FILTERED=420576
+```    
